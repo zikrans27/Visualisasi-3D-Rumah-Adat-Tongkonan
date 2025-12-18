@@ -279,8 +279,8 @@ folder.add(params, 'PutarOtomatis');
 const loader = new GLTFLoader(loadingManager);
 
 // Load Rumah Adat Tongkonan
-loader.load('./tantor.glb', (gltf) => {
-    const model = gltf.scene;
+loader.load('./tantor.glb', (glb) => {
+    const model = glb.scene;
     model.scale.set(1, 1, 1);
     model.traverse((n) => {
         if (n.isMesh) {
