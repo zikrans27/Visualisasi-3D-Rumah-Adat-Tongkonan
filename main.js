@@ -178,7 +178,7 @@
         const textureLoader = new THREE.TextureLoader(loadingManager);
 
         // A. Langit
-        textureLoader.load('qwantani_puresky.jpg', function(texture) {
+        textureLoader.load(baseURL + 'qwantani_puresky.jpg', function(texture) {
             texture.colorSpace = THREE.SRGBColorSpace;
             texture.mapping = THREE.EquirectangularReflectionMapping;
             scene.background = texture;
@@ -192,7 +192,7 @@
         scene.add(environment);
 
         // B. Tanah Datar Luas
-        const grassTexture = textureLoader.load('rumput.jpg');
+        const grassTexture = textureLoader.load(baseURL + 'rumput.jpg');
         grassTexture.wrapS = THREE.RepeatWrapping;
         grassTexture.wrapT = THREE.RepeatWrapping;
         grassTexture.repeat.set(100, 100);
@@ -380,7 +380,9 @@
         const loader = new THREE.GLTFLoader(loadingManager);
 
         // Load Rumah Adat Tongkonan
-        loader.load('tantor.glb', (gltf) => {
+        const baseURL = 'https://raw.githubusercontent.com/USERNAME/REPO-NAME/main/';
+        
+        loader.load(baseURL + 'tantor.glb', (gltf) => {
             const model = gltf.scene;
             model.scale.set(1, 1, 1);
             model.traverse((n) => {
@@ -396,7 +398,7 @@
         });
 
         // Load Kerbau (di depan rumah tongkonan)
-        loader.load('kerbau4.glb', (gltf) => {
+        loader.load(baseURL + 'kerbau4.glb', (gltf) => {
             const kerbau1 = gltf.scene;
             kerbau1.scale.set(1.5, 1.5, 1.5);
             kerbau1.position.set(3, 0, 6);
@@ -420,7 +422,7 @@
         });
 
         // Load Pohon Palm (di belakang dan sekitar rumah)
-        loader.load('pohon palm.glb', (gltf) => {
+        loader.load(baseURL + 'pohon palm.glb', (gltf) => {
             // Pohon 1 - Belakang kiri
             const pohon1 = gltf.scene;
             pohon1.scale.set(0.8, 0.8, 0.8);
@@ -455,3 +457,74 @@
             const pohon5 = pohon1.clone();
             pohon5.position.set(0, 0, -9);
             pohon5.scale.set(1.0, 1.0, 1.0);
+            scene.add(pohon5);
+            console.log("✅ Model pohon berhasil dimuat!");
+        }, undefined, (error) => {
+            console.error("❌ Gagal memuat model pohon:", error);
+        });
+
+        // --- 9. ANIMASI & KONTROL ---
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
+        camera.position.set(0, 5, 20);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = false;
+        controls.autoRotateSpeed = 0.5;
+        controls.maxPolarAngle = Math.PI / 2 - 0.1;
+
+        // === AUDIO BACKGROUND ===
+        const audioListener = new THREE.AudioListener();
+        camera.add(audioListener);
+
+        const backgroundMusic = new THREE.Audio(audioListener);
+        const audioLoader = new THREE.AudioLoader(loadingManager);
+
+        audioLoader.load(baseURL + 'madeden_marampa.mp3', function(buffer) {
+            backgroundMusic.setBuffer(buffer);
+            backgroundMusic.setLoop(true);
+            backgroundMusic.setVolume(0.5);
+        });
+
+        function resumeAudioContext() {
+            if (audioListener.context.state === 'suspended') {
+                audioListener.context.resume();
+            }
+            if (backgroundMusic.buffer && !backgroundMusic.isPlaying) {
+                backgroundMusic.play();
+            }
+        }
+
+        window.addEventListener('click', resumeAudioContext);
+        window.addEventListener('keydown', resumeAudioContext);
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+
+        // === ANIMATION LOOP ===
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if (params.PutarOtomatis) {
+                params.Jam += 0.03;
+                if (params.Jam > 24) params.Jam = 0;
+                updateMatahari();
+            }
+
+            hotspots.forEach(h => {
+                h.position.y = h.userData.initialY + Math.sin(time * 2.5) * 0.08;
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
